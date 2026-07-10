@@ -1,0 +1,54 @@
+name: exp11_event_payload_exposure
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  local_event_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@v4
+
+      - name: Local step inspects event payload summary
+        shell: bash
+        env:
+          PROBE_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ ! -f "${GITHUB_EVENT_PATH:-}" ]]; then
+            echo "[local-step] event payload file is not present"
+            exit 0
+          fi
+          echo "[local-step] event payload file is present"
+          echo "[local-step] event_name=${PROBE_EVENT_NAME:-unknown}"
+          python - <<'PY'
+          import json
+          import os
+
+          path = os.environ["GITHUB_EVENT_PATH"]
+          with open(path, "r", encoding="utf-8") as fh:
+              data = json.load(fh)
+
+          summary = {
+              "top_level_keys": sorted(list(data.keys()))[:10],
+              "has_repository": "repository" in data,
+              "has_sender": "sender" in data,
+              "has_workflow": "workflow" in data,
+              "action": data.get("action"),
+              "ref": data.get("ref"),
+          }
+          print("[local-step] event payload summary")
+          print(json.dumps(summary, sort_keys=True))
+          PY
+
+      - name: Run cross-owner action event probe
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: event
+
+  reusable_event_check:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_event_probe.yml@main
