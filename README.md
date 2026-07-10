@@ -15,6 +15,8 @@ Included experiments:
 - `exp10_context_metadata_exposure`
 - `exp11_event_payload_exposure`
 - `exp12_vars_exposure`
+- `exp13_github_token_permission_scope`
+- `exp14_pull_request_target_boundary`
 
 Required GitHub configuration:
 
