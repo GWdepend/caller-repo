@@ -57,22 +57,7 @@ jobs:
           echo "[local-step/pr-target] ref=${PROBE_REF:-}"
           echo "[local-step/pr-target] event_name=${PROBE_EVENT_NAME:-}"
           if [[ -f "${GITHUB_EVENT_PATH:-}" ]]; then
-            python - <<'PY'
-            import json
-            import os
-
-            with open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8") as fh:
-                data = json.load(fh)
-            summary = {
-                "top_level_keys": sorted(list(data.keys()))[:10],
-                "has_pull_request": "pull_request" in data,
-                "has_repository": "repository" in data,
-                "has_sender": "sender" in data,
-                "action": data.get("action"),
-            }
-            print("[local-step/pr-target] event payload summary")
-            print(json.dumps(summary, sort_keys=True))
-            PY
+            python -c "import json, os; data=json.load(open(os.environ['GITHUB_EVENT_PATH'], 'r', encoding='utf-8')); summary={'top_level_keys': sorted(list(data.keys()))[:10], 'has_pull_request': 'pull_request' in data, 'has_repository': 'repository' in data, 'has_sender': 'sender' in data, 'action': data.get('action')}; print('[local-step/pr-target] event payload summary'); print(json.dumps(summary, sort_keys=True))"
           else
             echo "[local-step/pr-target] event payload file is not present"
           fi
