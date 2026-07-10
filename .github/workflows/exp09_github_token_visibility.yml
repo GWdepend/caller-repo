@@ -1,0 +1,53 @@
+name: exp09_github_token_visibility
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local_token_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@v4
+
+      - name: Local step checks whether github token from context is present
+        shell: bash
+        env:
+          GITHUB_TOKEN_FROM_CONTEXT: ${{ github.token }}
+        run: |
+          if [[ -n "${GITHUB_TOKEN_FROM_CONTEXT:-}" ]]; then
+            echo "[local-step] github token from context is present"
+            echo "[local-step] github token length=${#GITHUB_TOKEN_FROM_CONTEXT}"
+          else
+            echo "[local-step] github token from context is not present"
+            exit 0
+          fi
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          api = os.environ.get("GITHUB_API_URL", "https://api.github.com")
+          token = os.environ.get("GITHUB_TOKEN_FROM_CONTEXT", "")
+
+          req = urllib.request.Request(
+              f"{api}/repos/{repo}",
+              headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+          )
+          with urllib.request.urlopen(req, timeout=30) as resp:
+              data = json.load(resp)
+          print("[local-step] github api probe succeeded")
+          print(json.dumps({"full_name": data.get("full_name"), "private": data.get("private")}, sort_keys=True))
+          PY
+
+      - name: Run cross-owner action token probe
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: token
+
+  reusable_token_check:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_token_probe.yml@main
