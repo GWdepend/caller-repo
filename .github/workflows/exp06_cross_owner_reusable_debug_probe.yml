@@ -1,0 +1,13 @@
+name: exp06_cross_owner_reusable_debug_probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  call_cross_owner_reusable_debug_workflow:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_debug_probe.yml@main
+    secrets: inherit
