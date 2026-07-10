@@ -1,0 +1,32 @@
+name: exp03_untrusted_action_oidc_probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  third_party_action_probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@v4
+
+      - name: Local baseline before external action
+        shell: bash
+        run: |
+          chmod +x scripts/print_claims.sh
+          ./scripts/print_claims.sh
+
+      - name: Run cross-owner action probe
+        uses: GWdepend/untrusted-action@main
+        with:
+          audience: sts.amazonaws.com
+
+      - name: Local baseline after external action
+        shell: bash
+        run: |
+          chmod +x scripts/print_claims.sh
+          ./scripts/print_claims.sh
