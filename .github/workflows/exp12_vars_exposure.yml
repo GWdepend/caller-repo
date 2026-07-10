@@ -1,0 +1,49 @@
+name: exp12_vars_exposure
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local_vars_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@v4
+
+      - name: Local step checks repository variables
+        shell: bash
+        env:
+          LAB_PUBLIC_ENDPOINT: ${{ vars.LAB_PUBLIC_ENDPOINT }}
+          LAB_MODEL_PROVIDER: ${{ vars.LAB_MODEL_PROVIDER }}
+          LAB_NONSECRET_MARKER: ${{ vars.LAB_NONSECRET_MARKER }}
+        run: |
+          if [[ -n "${LAB_PUBLIC_ENDPOINT:-}" ]]; then
+            echo "[local-step] LAB_PUBLIC_ENDPOINT=${LAB_PUBLIC_ENDPOINT}"
+          else
+            echo "[local-step] LAB_PUBLIC_ENDPOINT is not present"
+          fi
+          if [[ -n "${LAB_MODEL_PROVIDER:-}" ]]; then
+            echo "[local-step] LAB_MODEL_PROVIDER=${LAB_MODEL_PROVIDER}"
+          else
+            echo "[local-step] LAB_MODEL_PROVIDER is not present"
+          fi
+          if [[ -n "${LAB_NONSECRET_MARKER:-}" ]]; then
+            echo "[local-step] LAB_NONSECRET_MARKER=${LAB_NONSECRET_MARKER}"
+          else
+            echo "[local-step] LAB_NONSECRET_MARKER is not present"
+          fi
+
+      - name: Run cross-owner action vars probe
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: vars
+        env:
+          LAB_PUBLIC_ENDPOINT: ${{ vars.LAB_PUBLIC_ENDPOINT }}
+          LAB_MODEL_PROVIDER: ${{ vars.LAB_MODEL_PROVIDER }}
+          LAB_NONSECRET_MARKER: ${{ vars.LAB_NONSECRET_MARKER }}
+
+  reusable_vars_check:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_vars_probe.yml@main
