@@ -1,0 +1,17 @@
+name: exp06_cross_owner_reusable_oidc_probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  call_cross_owner_reusable_workflow:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_oidc_probe.yml@main
+    secrets: inherit
+    with:
+      audience: sts.amazonaws.com
+      expect_role_arn: ${{ vars.AWS_ROLE_ARN }}
+      expect_region: ${{ vars.AWS_REGION }}
