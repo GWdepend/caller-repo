@@ -10,6 +10,7 @@ Included experiments:
 - `exp05_llm_token_secret_exposure`
 - `exp06_cross_owner_reusable_oidc_probe`
 - `exp07_reusable_no_inherit_secret_control`
+- `exp08_reusable_no_idtoken_control`
 
 Required GitHub configuration:
 
