@@ -1,0 +1,65 @@
+name: exp13_github_token_permission_scope
+
+on:
+  workflow_dispatch:
+
+jobs:
+  read_scope_probe:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@v4
+
+      - name: Local read-scope token probe
+        shell: bash
+        env:
+          GITHUB_TOKEN_FROM_CONTEXT: ${{ github.token }}
+        run: |
+          if [[ -n "${GITHUB_TOKEN_FROM_CONTEXT:-}" ]]; then
+            echo "[local-step/read-scope] github token from context is present"
+            echo "[local-step/read-scope] github token length=${#GITHUB_TOKEN_FROM_CONTEXT}"
+          else
+            echo "[local-step/read-scope] github token from context is not present"
+          fi
+
+      - name: Run cross-owner action token probe under read scope
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: token
+
+  read_scope_reusable_probe:
+    permissions:
+      contents: read
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_token_probe.yml@main
+
+  write_scope_probe:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@v4
+
+      - name: Local write-scope token probe
+        shell: bash
+        env:
+          GITHUB_TOKEN_FROM_CONTEXT: ${{ github.token }}
+        run: |
+          if [[ -n "${GITHUB_TOKEN_FROM_CONTEXT:-}" ]]; then
+            echo "[local-step/write-scope] github token from context is present"
+            echo "[local-step/write-scope] github token length=${#GITHUB_TOKEN_FROM_CONTEXT}"
+          else
+            echo "[local-step/write-scope] github token from context is not present"
+          fi
+
+      - name: Run cross-owner action token probe under write scope
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: token
+
+  write_scope_reusable_probe:
+    permissions:
+      contents: write
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_token_probe.yml@main
