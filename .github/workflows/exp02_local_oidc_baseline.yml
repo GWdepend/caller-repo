@@ -2,8 +2,6 @@ name: exp02_local_oidc_baseline
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
