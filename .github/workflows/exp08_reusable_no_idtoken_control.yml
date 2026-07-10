@@ -1,0 +1,16 @@
+name: exp08_reusable_no_idtoken_control
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  call_cross_owner_reusable_workflow_without_idtoken:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_oidc_probe.yml@main
+    secrets: inherit
+    with:
+      audience: sts.amazonaws.com
+      expect_role_arn: ${{ vars.AWS_ROLE_ARN }}
+      expect_region: ${{ vars.AWS_REGION }}
