@@ -1,0 +1,41 @@
+name: exp10_context_metadata_exposure
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local_context_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@v4
+
+      - name: Local step prints selected GitHub context metadata
+        shell: bash
+        env:
+          PROBE_ACTOR: ${{ github.actor }}
+          PROBE_TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          PROBE_REPOSITORY: ${{ github.repository }}
+          PROBE_REF: ${{ github.ref }}
+          PROBE_WORKFLOW_REF: ${{ github.workflow_ref }}
+          PROBE_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          PROBE_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          echo "[local-step] actor=${PROBE_ACTOR:-}"
+          echo "[local-step] triggering_actor=${PROBE_TRIGGERING_ACTOR:-}"
+          echo "[local-step] repository=${PROBE_REPOSITORY:-}"
+          echo "[local-step] ref=${PROBE_REF:-}"
+          echo "[local-step] workflow_ref=${PROBE_WORKFLOW_REF:-}"
+          echo "[local-step] workflow_sha=${PROBE_WORKFLOW_SHA:-}"
+          echo "[local-step] event_name=${PROBE_EVENT_NAME:-}"
+
+      - name: Run cross-owner action context probe
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: context
+
+  reusable_context_check:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_context_probe.yml@main
