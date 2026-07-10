@@ -11,9 +11,14 @@ Included experiments:
 - `exp06_cross_owner_reusable_oidc_probe`
 - `exp07_reusable_no_inherit_secret_control`
 - `exp08_reusable_no_idtoken_control`
+- `exp09_github_token_visibility`
+- `exp10_context_metadata_exposure`
+- `exp11_event_payload_exposure`
+- `exp12_vars_exposure`
 
 Required GitHub configuration:
 
 - repository secret `CANARY_SECRET`
 - repository secret `OPENAI_API_KEY` for realistic LLM token exposure tests
+- repository variables `LAB_PUBLIC_ENDPOINT`, `LAB_MODEL_PROVIDER`, and `LAB_NONSECRET_MARKER`
 - optional AWS repository variables later if you extend to cloud federation
