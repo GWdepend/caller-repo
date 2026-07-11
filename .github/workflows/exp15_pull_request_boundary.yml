@@ -1,0 +1,107 @@
+name: exp15_pull_request_boundary
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  local_boundary_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@v4
+
+      - name: Local step inspects boundary-sensitive data
+        shell: bash
+        env:
+          CANARY_SECRET: ${{ secrets.CANARY_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN_FROM_CONTEXT: ${{ github.token }}
+          PROBE_ACTOR: ${{ github.actor }}
+          PROBE_TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          PROBE_REPOSITORY: ${{ github.repository }}
+          PROBE_REF: ${{ github.ref }}
+          PROBE_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ -n "${CANARY_SECRET:-}" ]]; then
+            echo "[local-step/pr] canary secret is present"
+          else
+            echo "[local-step/pr] canary secret is not present"
+          fi
+          if [[ -n "${OPENAI_API_KEY:-}" ]]; then
+            echo "[local-step/pr] llm token secret is present"
+          else
+            echo "[local-step/pr] llm token secret is not present"
+          fi
+          if [[ -n "${GITHUB_TOKEN_FROM_CONTEXT:-}" ]]; then
+            echo "[local-step/pr] github token from context is present"
+            echo "[local-step/pr] github token length=${#GITHUB_TOKEN_FROM_CONTEXT}"
+          else
+            echo "[local-step/pr] github token from context is not present"
+          fi
+          if [[ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" && -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]]; then
+            echo "[local-step/pr] OIDC request environment is present"
+          else
+            echo "[local-step/pr] OIDC request environment is not present"
+          fi
+          echo "[local-step/pr] actor=${PROBE_ACTOR:-}"
+          echo "[local-step/pr] triggering_actor=${PROBE_TRIGGERING_ACTOR:-}"
+          echo "[local-step/pr] repository=${PROBE_REPOSITORY:-}"
+          echo "[local-step/pr] ref=${PROBE_REF:-}"
+          echo "[local-step/pr] event_name=${PROBE_EVENT_NAME:-}"
+          if [[ -f "${GITHUB_EVENT_PATH:-}" ]]; then
+            python -c "import json, os; data=json.load(open(os.environ['GITHUB_EVENT_PATH'], 'r', encoding='utf-8')); summary={'top_level_keys': sorted(list(data.keys()))[:10], 'has_pull_request': 'pull_request' in data, 'has_repository': 'repository' in data, 'has_sender': 'sender' in data, 'action': data.get('action')}; print('[local-step/pr] event payload summary'); print(json.dumps(summary, sort_keys=True))"
+          else
+            echo "[local-step/pr] event payload file is not present"
+          fi
+
+      - name: Run cross-owner action secret probe under pull_request
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: secret
+        env:
+          CANARY_SECRET: ${{ secrets.CANARY_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Run cross-owner action token probe under pull_request
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: token
+
+      - name: Run cross-owner action context probe under pull_request
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: context
+
+      - name: Run cross-owner action event probe under pull_request
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: event
+
+  reusable_secret_boundary_check:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_secret_probe.yml@main
+    secrets: inherit
+
+  reusable_token_boundary_check:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_token_probe.yml@main
+
+  reusable_context_boundary_check:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_context_probe.yml@main
+
+  reusable_event_boundary_check:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_event_probe.yml@main
+
+  reusable_oidc_boundary_check:
+    uses: GWdepend/untrusted-reusable-workflow/.github/workflows/reusable_oidc_probe.yml@main
+    secrets: inherit
+    with:
+      audience: sts.amazonaws.com
+      expect_role_arn: ${{ vars.AWS_ROLE_ARN }}
+      expect_region: ${{ vars.AWS_REGION }}
