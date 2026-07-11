@@ -17,6 +17,9 @@ Included experiments:
 - `exp12_vars_exposure`
 - `exp13_github_token_permission_scope`
 - `exp14_pull_request_target_boundary`
+- `exp15_pull_request_boundary`
+- `exp16_secondary_channel_propagation`
+- `exp17_multihop_reusable_chain`
 
 Required GitHub configuration:
 
