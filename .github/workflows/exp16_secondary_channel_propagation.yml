@@ -72,15 +72,15 @@ jobs:
       - name: Restore bridge cache in later privileged job
         uses: actions/cache/restore@v4
         with:
-          path: restored-bridge-cache
+          path: .bridge-cache
           key: bridge-cache-${{ github.run_id }}
 
       - name: Inspect restored cache
         shell: bash
         run: |
-          if [[ -f "restored-bridge-cache/summary.json" ]]; then
+          if [[ -f ".bridge-cache/summary.json" ]]; then
             echo "[later-job] bridge cache summary is present"
-            python -c "import json; print('[later-job] cache summary'); print(json.dumps(json.load(open('restored-bridge-cache/summary.json', 'r', encoding='utf-8')), sort_keys=True))"
+            python -c "import json; print('[later-job] cache summary'); print(json.dumps(json.load(open('.bridge-cache/summary.json', 'r', encoding='utf-8')), sort_keys=True))"
           else
             echo "[later-job] bridge cache summary is not present"
           fi
