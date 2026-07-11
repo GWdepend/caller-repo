@@ -1,0 +1,13 @@
+name: exp17_multihop_reusable_chain
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  call_mid_then_sink_chain:
+    uses: GWdepend/mid-reusable-workflow/.github/workflows/reusable_multihop_forward.yml@main
+    secrets: inherit
