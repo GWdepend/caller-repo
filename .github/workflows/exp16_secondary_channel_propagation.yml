@@ -1,0 +1,86 @@
+name: exp16_secondary_channel_propagation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  low_trust_bridge_job:
+    runs-on: ubuntu-latest
+    outputs:
+      bridge_summary_b64: ${{ steps.bridge.outputs.bridge_summary_b64 }}
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@v4
+
+      - name: Run cross-owner action bridge probe
+        id: bridge
+        uses: GWdepend/untrusted-action@main
+        with:
+          mode: bridge
+        env:
+          CANARY_SECRET: ${{ secrets.CANARY_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Upload bridge artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bridge-artifact
+          path: bridge/summary.json
+
+      - name: Save bridge cache
+        uses: actions/cache/save@v4
+        with:
+          path: .bridge-cache
+          key: bridge-cache-${{ github.run_id }}
+
+  later_privileged_job:
+    needs: low_trust_bridge_job
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Decode bridge output in later privileged job
+        shell: bash
+        env:
+          BRIDGE_SUMMARY_B64: ${{ needs.low_trust_bridge_job.outputs.bridge_summary_b64 }}
+        run: |
+          if [[ -n "${BRIDGE_SUMMARY_B64:-}" ]]; then
+            python -c "import base64, json, os; raw=base64.b64decode(os.environ['BRIDGE_SUMMARY_B64']).decode('utf-8'); print('[later-job] decoded output summary'); print(json.dumps(json.loads(raw), sort_keys=True))"
+          else
+            echo "[later-job] bridge output is not present"
+          fi
+
+      - name: Download bridge artifact in later privileged job
+        uses: actions/download-artifact@v4
+        with:
+          name: bridge-artifact
+          path: downloaded-bridge
+
+      - name: Inspect bridge artifact
+        shell: bash
+        run: |
+          if [[ -f "downloaded-bridge/summary.json" ]]; then
+            echo "[later-job] bridge artifact is present"
+            python -c "import json; print('[later-job] artifact summary'); print(json.dumps(json.load(open('downloaded-bridge/summary.json', 'r', encoding='utf-8')), sort_keys=True))"
+          else
+            echo "[later-job] bridge artifact is not present"
+          fi
+
+      - name: Restore bridge cache in later privileged job
+        uses: actions/cache/restore@v4
+        with:
+          path: restored-bridge-cache
+          key: bridge-cache-${{ github.run_id }}
+
+      - name: Inspect restored cache
+        shell: bash
+        run: |
+          if [[ -f "restored-bridge-cache/summary.json" ]]; then
+            echo "[later-job] bridge cache summary is present"
+            python -c "import json; print('[later-job] cache summary'); print(json.dumps(json.load(open('restored-bridge-cache/summary.json', 'r', encoding='utf-8')), sort_keys=True))"
+          else
+            echo "[later-job] bridge cache summary is not present"
+          fi
