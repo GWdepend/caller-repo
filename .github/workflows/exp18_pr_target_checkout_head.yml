@@ -1,0 +1,75 @@
+name: exp18_pr_target_checkout_head
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  checkout_head_marker_probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR head commit
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Inspect PR-controlled marker only
+        shell: bash
+        run: |
+          if [[ -f "fork-exp18-marker.txt" ]]; then
+            echo "[exp18] pr marker is present"
+            sed -n '1,20p' fork-exp18-marker.txt
+          else
+            echo "[exp18] pr marker is not present"
+          fi
+
+      - name: Check privileged identity context
+        shell: bash
+        env:
+          CANARY_SECRET: ${{ secrets.CANARY_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PROBE_ACTOR: ${{ github.actor }}
+          PROBE_TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          PROBE_EVENT_NAME: ${{ github.event_name }}
+          PROBE_REPOSITORY: ${{ github.repository }}
+          PROBE_REF: ${{ github.ref }}
+          PROBE_WORKFLOW_REF: ${{ github.workflow_ref }}
+          PROBE_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          PROBE_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PROBE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PROBE_BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          if [[ -n "${CANARY_SECRET:-}" ]]; then
+            echo "[exp18] canary secret is present"
+          else
+            echo "[exp18] canary secret is not present"
+          fi
+          if [[ -n "${OPENAI_API_KEY:-}" ]]; then
+            echo "[exp18] llm token secret is present"
+          else
+            echo "[exp18] llm token secret is not present"
+          fi
+          if [[ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" && -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]]; then
+            echo "[exp18] OIDC request environment is present"
+          else
+            echo "[exp18] OIDC request environment is not present"
+          fi
+          echo "[exp18] actor=${PROBE_ACTOR:-}"
+          echo "[exp18] triggering_actor=${PROBE_TRIGGERING_ACTOR:-}"
+          echo "[exp18] event_name=${PROBE_EVENT_NAME:-}"
+          echo "[exp18] repository=${PROBE_REPOSITORY:-}"
+          echo "[exp18] ref=${PROBE_REF:-}"
+          echo "[exp18] workflow_ref=${PROBE_WORKFLOW_REF:-}"
+          echo "[exp18] workflow_sha=${PROBE_WORKFLOW_SHA:-}"
+          echo "[exp18] head_repo=${PROBE_HEAD_REPO:-}"
+          echo "[exp18] head_sha=${PROBE_HEAD_SHA:-}"
+          echo "[exp18] base_ref=${PROBE_BASE_REF:-}"
